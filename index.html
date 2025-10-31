@@ -3,144 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Upload Panel - Charvik Programs</title>
+  <title>Charvik Programs</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #000;
-      color: #fff;
+      color: white;
       margin: 0;
-      padding: 0;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      align-items: center;
       text-align: center;
     }
 
     h1 {
+      font-size: 80px;
       color: #3498db;
-      font-size: 2em;
-      margin-bottom: 10px;
+      margin: 0;
     }
 
     p {
-      color: #aaa;
-      margin-bottom: 25px;
-    }
-
-    input[type="file"] {
-      background-color: #111;
-      border: 2px solid #3498db;
-      border-radius: 8px;
-      padding: 10px;
+      font-size: 20px;
       color: white;
-      cursor: pointer;
-      font-size: 1em;
-    }
-
-    button {
-      margin-top: 20px;
-      padding: 12px 25px;
-      border: none;
-      border-radius: 8px;
-      background-color: #3498db;
-      color: white;
-      font-size: 1em;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background-color: #2980b9;
-    }
-
-    .output {
-      margin-top: 25px;
-      padding: 20px;
-      border-radius: 10px;
-      background-color: #111;
-      border: 2px solid #3498db;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 0 10px rgba(0, 0, 255, 0.3);
-    }
-
-    .code-box {
-      font-size: 2em;
-      color: #27ae60;
       margin-top: 10px;
-      font-weight: bold;
     }
 
-    .preview {
-      margin-top: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 15px;
+    .loader {
+      border: 5px solid #222;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1.2s linear infinite;
+      margin-top: 25px;
     }
 
-    .preview img {
-      width: 120px;
-      border-radius: 8px;
-      border: 2px solid #3498db;
-    }
-
-    @media (max-width: 600px) {
-      h1 { font-size: 1.6em; }
-      input[type="file"], button {
-        width: 85%;
-      }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 
   <script>
-    function generateCode() {
-      return Math.floor(10000 + Math.random() * 90000).toString();
-    }
-
-    function uploadPhotos() {
-      const fileInput = document.getElementById('photoUpload');
-      const output = document.getElementById('output');
-      const preview = document.getElementById('preview');
-      const codeBox = document.getElementById('codeBox');
-
-      if (fileInput.files.length === 0) {
-        alert("Please select at least one photo.");
-        return;
-      }
-
-      const code = generateCode();
-      codeBox.textContent = code;
-
-      preview.innerHTML = "";
-      Array.from(fileInput.files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = document.createElement("img");
-          img.src = e.target.result;
-          preview.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-      });
-
-      output.style.display = "block";
-    }
+    // Redirect after 2 seconds
+    setTimeout(() => {
+      window.location.href = "admin.html";
+    }, 7000);
   </script>
 </head>
 <body>
-  <h1>🛠️ Admin Upload Panel</h1>
-  <p>Select visitor photos to upload and get a unique 5-digit code.</p>
-
-  <input type="file" id="photoUpload" multiple accept="image/*">
-  <button onclick="uploadPhotos()">Upload Photos</button>
-
-  <div id="output" class="output" style="display:none;">
-    <p>✅ Upload successful! Give this code to the visitor:</p>
-    <div class="code-box" id="codeBox"></div>
-    <div id="preview" class="preview"></div>
-  </div>
+  <h1>Charvik Programs</h1>
+  <p>Loading...</p>
+  <div class="loader"></div>
 </body>
 </html>
