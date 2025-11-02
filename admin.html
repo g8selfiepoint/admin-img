@@ -1,191 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel - Charvik Programs</title>
-<style>
-  body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #0a0a0a;
-    color: #00aaff;
-    text-align: center;
-    margin: 0;
-    padding: 50px 20px;
-  }
-  h1 {
-    font-size: 2.5em;
-    color: #00aaff;
-    text-shadow: 0 0 10px #007bff;
-  }
-  .camera-input {
-    margin: 15px 0;
-    padding: 20px;
-    border: 2px solid #007bff;
-    border-radius: 10px;
-    background: #111;
-    display: inline-block;
-    width: 280px;
-  }
-  input[type="file"] {
-    display: block;
-    margin: 10px auto;
-    color: white;
-  }
-  .preview {
-    margin-top: 10px;
-    width: 220px;
-    height: 160px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid #00aaff;
-    display: none;
-  }
-  button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 12px 25px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1em;
-    margin: 10px;
-    transition: 0.3s;
-  }
-  button:hover {
-    background-color: #00aaff;
-    box-shadow: 0 0 10px #00aaff;
-  }
-  .output {
-    margin-top: 30px;
-    background: #111;
-    padding: 20px;
-    border-radius: 10px;
-    text-align: left;
-    max-width: 600px;
-    margin-inline: auto;
-  }
-  .output a {
-    color: #00ffea;
-    text-decoration: none;
-  }
-  .output a:hover {
-    text-decoration: underline;
-  }
-  #generatedCode {
-    font-size: 1.3em;
-    color: #00ffea;
-    margin-top: 10px;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Charvik Programs</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+
+    h1 {
+      color: #3498db;
+      font-size: 40px;
+    }
+
+    input[type="file"] {
+      margin: 20px 0;
+      padding: 10px;
+      border-radius: 5px;
+      background: #111;
+      color: #fff;
+      border: 1px solid #3498db;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #output {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #0f0;
+    }
+
+    .link-box {
+      background: #111;
+      border: 1px solid #333;
+      padding: 10px;
+      margin: 10px auto;
+      width: 80%;
+      border-radius: 5px;
+      word-wrap: break-word;
+    }
+  </style>
 </head>
 <body>
+  <h1>Admin Panel - Charvik Programs</h1>
+  <p>Select one or more images to upload:</p>
 
-<h1>🧑‍💻 Admin Panel - Charvik Programs</h1>
-<p>Take photos using your camera only. Generate a 5-digit code for your set of images.</p>
+  <input type="file" id="fileInput" multiple accept="image/*">
+  <button onclick="uploadImages()">Upload</button>
 
-<div id="cameraContainer">
-  <div class="camera-input">
-    <input type="file" accept="image/*" capture="camera">
-    <img class="preview">
-  </div>
-</div>
+  <div id="output"></div>
 
-<button id="addCameraBtn">➕ Add Another Photo</button>
-<br>
-<button onclick="uploadAllImages()">📤 Upload & Generate Code</button>
+  <script>
+    const imgbbApiKey = "13c92fea16f5a4435ebdd770bebd783a"; // 🔹 Replace this with your real ImgBB API key
 
-<div class="output" id="output"></div>
+    async function uploadImages() {
+      const files = document.getElementById("fileInput").files;
+      const output = document.getElementById("output");
+      output.innerHTML = "Uploading... Please wait ⏳";
 
-<script>
-document.getElementById("addCameraBtn").addEventListener("click", () => {
-  const container = document.getElementById("cameraContainer");
-  const newInput = document.createElement("div");
-  newInput.classList.add("camera-input");
-  newInput.innerHTML = `
-    <input type="file" accept="image/*" capture="camera">
-    <img class="preview">
-  `;
-  container.appendChild(newInput);
-});
-
-// Preview image
-document.addEventListener("change", (e) => {
-  if (e.target && e.target.type === "file") {
-    const file = e.target.files[0];
-    if (file) {
-      const img = e.target.nextElementSibling;
-      img.src = URL.createObjectURL(file);
-      img.style.display = "block";
-    }
-  }
-});
-
-function generateCode() {
-  return Math.floor(10000 + Math.random() * 90000).toString();
-}
-
-async function uploadAllImages() {
-  const output = document.getElementById('output');
-  output.innerHTML = "<p style='color:white;'>Uploading images...</p>";
-
-  const inputs = document.querySelectorAll('input[type="file"]');
-  let uploadedLinks = [];
-
-  for (let input of inputs) {
-    if (!input.files.length) continue;
-    const file = input.files[0];
-    const formData = new FormData();
-    formData.append("image", file);
-
-    try {
-      const response = await fetch("https://api.imgbb.com/1/upload?key=13c92fea16f5a4435ebdd770bebd783a", {
-        method: "POST",
-        body: formData
-      });
-      const data = await response.json();
-      if (data.success) {
-        uploadedLinks.push(data.data.url);
+      if (files.length === 0) {
+        output.innerHTML = "<span style='color:red;'>No files selected!</span>";
+        return;
       }
-    } catch (error) {
-      console.error(error);
+
+      let uploadedLinks = [];
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        try {
+          const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+          if (data.success) {
+            uploadedLinks.push(data.data.url);
+          } else {
+            console.error("Upload failed:", data);
+          }
+        } catch (error) {
+          console.error("Error uploading image:", error);
+        }
+      }
+
+      if (uploadedLinks.length > 0) {
+        output.innerHTML = "<strong>Uploaded successfully! ✅</strong><br>Saving links...";
+
+        try {
+          const saveResponse = await fetch("https://admin-img-backend.onrender.com/add-photo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ links: uploadedLinks }),
+          });
+
+          const result = await saveResponse.json();
+
+          if (result.success) {
+            output.innerHTML = `
+              <strong style="color: #0f0;">Saved Successfully!</strong><br>
+              <div class='link-box'>Your Code: <b>${result.code}</b></div>
+              <p>Use this code to view photos later.</p>
+            `;
+          } else {
+            output.innerHTML = "<span style='color:red;'>Failed to save links!</span>";
+          }
+        } catch (e) {
+          console.log("Simulated save (backend not found).", e);
+          output.innerHTML = `
+            <strong>Uploaded but not saved (backend unavailable).</strong><br>
+            <div class='link-box'>Links:<br>${uploadedLinks.join("<br>")}</div>
+          `;
+        }
+      } else {
+        output.innerHTML = "<span style='color:red;'>No images uploaded!</span>";
+      }
     }
-  }
-
-  if (uploadedLinks.length > 0) {
-    const code = generateCode();
-
-    // Display results
-    output.innerHTML = `
-      <h3 style='color:#00ffea;'>✅ Uploaded Successfully!</h3>
-      <p id="generatedCode">Code: <strong>${code}</strong> <button onclick="copyCode('${code}')">Copy</button></p>
-      <h4 style="color:#007bff;">Image Links:</h4>
-    `;
-    uploadedLinks.forEach(link => {
-      output.innerHTML += `<a href="${link}" target="_blank">${link}</a><br>`;
-    });
-
-    // Save data.json (only works when backend present)
-    const newData = { code: code, links: uploadedLinks };
-    try {
-      await fetch('data.json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newData)
-      });
-    } catch (e) {
-      console.log('Simulated save to data.json (for GitHub this will need backend).');
-    }
-  } else {
-    output.innerHTML = "<p style='color:red;'>❌ No images captured.</p>";
-  }
-}
-
-function copyCode(code) {
-  navigator.clipboard.writeText(code);
-  alert("Code copied: " + code);
-}
-</script>
-
+  </script>
 </body>
 </html>
