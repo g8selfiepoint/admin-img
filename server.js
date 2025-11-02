@@ -1,21 +1,29 @@
 import express from "express";
 import fs from "fs";
 import cors from "cors";
+import multer from "multer";
 import path from "path";
-import { fileURLToPath } from "url";
-
-// Setup paths
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// File for saving data
-const DATA_FILE = path.join(__dirname, "data.json");
+const DATA_FILE = "./data.json";
+const UPLOAD_DIR = "./uploads";
 
-// Read saved data
+// Ensure uploads folder exists
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR);
+}
+
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+});
+const upload = multer({ storage });
+
+// Helper to read data.json safely
 function readData() {
   try {
     const data = fs.readFileSync(DATA_FILE, "utf8");
@@ -25,49 +33,41 @@ function readData() {
   }
 }
 
-// Write new data
+// Helper to write data.json safely
 function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// Generate random 5-digit code
-function generateCode() {
-  return Math.floor(10000 + Math.random() * 90000).toString();
-}
-
-// ✅ Add photo links with generated code
-app.post("/add-photo", (req, res) => {
-  const { links } = req.body;
-
-  if (!links || !Array.isArray(links) || links.length === 0) {
-    return res.status(400).json({ success: false, message: "Invalid or empty links array." });
-  }
-
-  const code = generateCode();
+// 📤 Upload images and generate a unique code
+app.post("/upload", upload.array("images", 10), (req, res) => {
+  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
   const data = readData();
-  data[code] = links;
+
+  data[code] = req.files.map(file => ({
+    filename: file.filename,
+    path: `/uploads/${file.filename}`,
+  }));
+
   writeData(data);
 
-  console.log(`🆕 Added photo set with code ${code}`);
   res.json({ success: true, code });
 });
 
-// ✅ Retrieve photo links by code
-app.get("/get-photos/:code", (req, res) => {
+// 📸 Fetch images by code
+app.get("/images/:code", (req, res) => {
   const { code } = req.params;
   const data = readData();
 
-  if (data[code]) {
-    res.json({ success: true, links: data[code] });
-  } else {
-    res.json({ success: false, message: "Invalid code" });
+  if (!data[code]) {
+    return res.status(404).json({ success: false, message: "❌ No photos found for this code." });
   }
+
+  res.json({ success: true, images: data[code] });
 });
 
-// 🟢 Root route (for Render test)
-app.get("/", (req, res) => {
-  res.send("✅ Admin Image Backend is Running!");
-});
+// Serve the uploads folder publicly
+app.use("/uploads", express.static(path.resolve(UPLOAD_DIR)));
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
