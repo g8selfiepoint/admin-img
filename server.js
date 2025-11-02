@@ -38,9 +38,14 @@ function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
+// Generate a 5-digit numeric code (e.g. 38241)
+function generateCode() {
+  return Math.floor(10000 + Math.random() * 90000).toString();
+}
+
 // 📤 Upload images and generate a unique code
 app.post("/upload", upload.array("images", 10), (req, res) => {
-  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const code = generateCode();
   const data = readData();
 
   data[code] = req.files.map(file => ({
@@ -50,6 +55,7 @@ app.post("/upload", upload.array("images", 10), (req, res) => {
 
   writeData(data);
 
+  console.log(`✅ Uploaded ${req.files.length} image(s) for code ${code}`);
   res.json({ success: true, code });
 });
 
@@ -59,13 +65,14 @@ app.get("/images/:code", (req, res) => {
   const data = readData();
 
   if (!data[code]) {
+    console.log(`❌ No photos found for code ${code}`);
     return res.status(404).json({ success: false, message: "❌ No photos found for this code." });
   }
 
   res.json({ success: true, images: data[code] });
 });
 
-// Serve the uploads folder publicly
+// Serve uploads folder publicly
 app.use("/uploads", express.static(path.resolve(UPLOAD_DIR)));
 
 // Start server
