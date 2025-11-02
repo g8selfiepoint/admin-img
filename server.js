@@ -1,52 +1,120 @@
-import express from "express";
-import fs from "fs";
-import cors from "cors";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Images - Charvik Programs</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #000;
+      color: #00aaff;
+      text-align: center;
+      margin: 0;
+      padding: 40px 20px;
+    }
+    h1 {
+      font-size: 2.2em;
+      color: #00aaff;
+      text-shadow: 0 0 10px #007bff;
+    }
+    input {
+      padding: 12px;
+      font-size: 1.2em;
+      border-radius: 8px;
+      border: 2px solid #007bff;
+      width: 180px;
+      text-align: center;
+      background: #111;
+      color: white;
+      margin-top: 20px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-left: 10px;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #00aaff;
+      box-shadow: 0 0 10px #00aaff;
+    }
+    .gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .gallery img {
+      width: 250px;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 2px solid #00aaff;
+      transition: transform 0.3s;
+    }
+    .gallery img:hover {
+      transform: scale(1.05);
+    }
+    .message {
+      color: #ff4444;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+<h1>🖼️ View Uploaded Photos</h1>
+<p>Enter your 5-digit code to view the images:</p>
 
-const DATA_FILE = "./data.json";
+<input type="text" id="codeInput" maxlength="5" placeholder="Enter code">
+<button onclick="fetchPhotos()">View</button>
 
-function readData() {
+<div id="output" class="message"></div>
+<div class="gallery" id="gallery"></div>
+
+<script>
+async function fetchPhotos() {
+  const code = document.getElementById("codeInput").value.trim();
+  const output = document.getElementById("output");
+  const gallery = document.getElementById("gallery");
+  output.textContent = "";
+  gallery.innerHTML = "";
+
+  if (!code) {
+    output.textContent = "⚠️ Please enter a valid code.";
+    return;
+  }
+
+  output.textContent = "Loading images...";
+
   try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-  } catch {
-    return {};
+    const response = await fetch(`https://admin-img-backend.onrender.com/get-photos/${code}`);
+    const data = await response.json();
+
+    if (data.success && data.links.length > 0) {
+      output.textContent = `✅ Found ${data.links.length} image(s) for code ${code}`;
+      data.links.forEach(link => {
+        const img = document.createElement("img");
+        img.src = link;
+        img.alt = "Uploaded photo";
+        gallery.appendChild(img);
+      });
+    } else {
+      output.textContent = "❌ Invalid or expired code. No images found.";
+    }
+  } catch (error) {
+    console.error(error);
+    output.textContent = "⚠️ Error fetching images.";
   }
 }
+</script>
 
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
-
-function generateCode() {
-  return Math.floor(10000 + Math.random() * 90000).toString();
-}
-
-// Add photo links with generated code
-app.post("/add-photo", (req, res) => {
-  const { links } = req.body;
-  if (!links || !Array.isArray(links)) {
-    return res.status(400).json({ success: false, message: "Invalid links" });
-  }
-
-  const code = generateCode();
-  const data = readData();
-  data[code] = links;
-  writeData(data);
-
-  res.json({ success: true, code });
-});
-
-// Retrieve photo links by code
-app.get("/get-photos/:code", (req, res) => {
-  const code = req.params.code;
-  const data = readData();
-
-  if (data[code]) res.json({ success: true, links: data[code] });
-  else res.json({ success: false, message: "Invalid code" });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Backend running on ${PORT}`));
+</body>
+</html>
