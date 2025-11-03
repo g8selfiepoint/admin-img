@@ -38,12 +38,20 @@ function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// Generate a 5-digit numeric code (e.g. 38241)
+// Generate a unique 5-digit code that has not been used before
 function generateCode() {
-  return Math.floor(10000 + Math.random() * 90000).toString();
+  const data = readData();
+  let code;
+
+  // Keep generating until an unused code is found
+  do {
+    code = Math.floor(10000 + Math.random() * 90000).toString();
+  } while (data[code]);
+
+  return code;
 }
 
-// 📤 Upload images and generate a unique code
+// 📤 Upload images and generate a unique, non-reused code
 app.post("/upload", upload.array("images", 10), (req, res) => {
   const code = generateCode();
   const data = readData();
@@ -66,7 +74,10 @@ app.get("/images/:code", (req, res) => {
 
   if (!data[code]) {
     console.log(`❌ No photos found for code ${code}`);
-    return res.status(404).json({ success: false, message: "❌ No photos found for this code." });
+    return res.status(404).json({
+      success: false,
+      message: "❌ No photos found for this code.",
+    });
   }
 
   res.json({ success: true, images: data[code] });
