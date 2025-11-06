@@ -20,20 +20,17 @@
       padding-top: 40px;
       transition: 0.5s;
     }
-
     h1 {
       color: #00aaff;
       font-size: 36px;
       margin-bottom: 15px;
       text-shadow: 0 0 10px #007bff;
     }
-
     p {
       font-size: 18px;
       color: #bbb;
       margin-top: 5px;
     }
-
     input[type="password"], input[type="file"] {
       padding: 12px;
       border-radius: 10px;
@@ -43,13 +40,11 @@
       width: 250px;
       text-align: center;
     }
-
     input[type="password"]:focus, input[type="file"]:hover {
       border-color: #00aaff;
       box-shadow: 0 0 10px #00aaff;
       outline: none;
     }
-
     button {
       background-color: #007bff;
       color: white;
@@ -60,12 +55,10 @@
       cursor: pointer;
       transition: 0.3s;
     }
-
     button:hover {
       background-color: #00aaff;
       box-shadow: 0 0 10px #00aaff;
     }
-
     .plus-btn {
       background-color: #00aaff;
       border-radius: 50%;
@@ -76,15 +69,12 @@
       line-height: 1;
       padding: 0;
     }
-
     .plus-btn:hover {
       background-color: #007bff;
     }
-
     .hidden {
       display: none;
     }
-
     .input-container {
       display: flex;
       flex-direction: column;
@@ -92,14 +82,12 @@
       margin-top: 20px;
       gap: 15px;
     }
-
     .buttons {
       margin-top: 25px;
       display: flex;
       gap: 15px;
       justify-content: center;
     }
-
     #output {
       margin-top: 25px;
       font-size: 18px;
@@ -107,7 +95,6 @@
       max-width: 90%;
       word-wrap: break-word;
     }
-
     .link-box {
       background: #111;
       border: 1px solid #333;
@@ -117,7 +104,6 @@
       border-radius: 5px;
       word-wrap: break-word;
     }
-
     #loginBox {
       margin-top: 100px;
     }
@@ -184,7 +170,7 @@
       const formData = new FormData();
       inputs.forEach(input => {
         if (input.files.length > 0) {
-          for (let file of input.files) formData.append("image", file);
+          for (let file of input.files) formData.append("image", file); // ✅ Correct key
         }
       });
 
