@@ -17,13 +17,14 @@
       justify-content: flex-start;
       min-height: 100vh;
       text-align: center;
-      padding-top: 30px;
+      padding-top: 40px;
+      transition: 0.5s;
     }
 
     h1 {
       color: #00aaff;
-      font-size: 38px;
-      margin-bottom: 10px;
+      font-size: 36px;
+      margin-bottom: 15px;
       text-shadow: 0 0 10px #007bff;
     }
 
@@ -33,34 +34,20 @@
       margin-top: 5px;
     }
 
-    .input-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 20px;
-      gap: 15px;
-    }
-
-    input[type="file"] {
+    input[type="password"], input[type="file"] {
       padding: 12px;
       border-radius: 10px;
       background: #111;
       border: 2px solid #007bff;
       color: #fff;
       width: 250px;
-      cursor: pointer;
+      text-align: center;
     }
 
-    input[type="file"]:hover {
+    input[type="password"]:focus, input[type="file"]:hover {
       border-color: #00aaff;
       box-shadow: 0 0 10px #00aaff;
-    }
-
-    .buttons {
-      margin-top: 25px;
-      display: flex;
-      gap: 15px;
-      justify-content: center;
+      outline: none;
     }
 
     button {
@@ -94,6 +81,25 @@
       background-color: #007bff;
     }
 
+    .hidden {
+      display: none;
+    }
+
+    .input-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+      gap: 15px;
+    }
+
+    .buttons {
+      margin-top: 25px;
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
     #output {
       margin-top: 25px;
       font-size: 18px;
@@ -111,25 +117,56 @@
       border-radius: 5px;
       word-wrap: break-word;
     }
+
+    #loginBox {
+      margin-top: 100px;
+    }
   </style>
 </head>
 <body>
   <h1>Admin Panel - Charvik Programs</h1>
-  <p>Select one or more images to upload 📸</p>
 
-  <div class="input-container" id="inputContainer">
-    <input type="file" accept="image/*" multiple>
+  <!-- 🔐 PASSCODE LOGIN -->
+  <div id="loginBox">
+    <p>Enter 10-digit Admin Passcode to continue 🔒</p>
+    <input type="password" id="passcodeInput" maxlength="10" placeholder="**********" />
+    <br><br>
+    <button onclick="checkPasscode()">Unlock</button>
+    <p id="loginMessage" style="color:red;margin-top:10px;"></p>
   </div>
 
-  <div class="buttons">
-    <button class="plus-btn" onclick="addInput()">+</button>
-    <button onclick="uploadImages()">Upload</button>
-  </div>
+  <!-- 📸 UPLOAD SECTION -->
+  <div id="uploadBox" class="hidden">
+    <p>Select one or more images to upload 📸</p>
 
-  <div id="output"></div>
+    <div class="input-container" id="inputContainer">
+      <input type="file" accept="image/*" multiple>
+    </div>
+
+    <div class="buttons">
+      <button class="plus-btn" onclick="addInput()">+</button>
+      <button onclick="uploadImages()">Upload</button>
+    </div>
+
+    <div id="output"></div>
+  </div>
 
   <script>
-    // Add another file input
+    const ADMIN_PASSCODE = "7337813468";
+
+    // ✅ Passcode validation
+    function checkPasscode() {
+      const input = document.getElementById("passcodeInput").value.trim();
+      const msg = document.getElementById("loginMessage");
+      if (input === ADMIN_PASSCODE) {
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("uploadBox").classList.remove("hidden");
+      } else {
+        msg.textContent = "❌ Invalid passcode!";
+      }
+    }
+
+    // ➕ Add another file input
     function addInput() {
       const container = document.getElementById("inputContainer");
       const input = document.createElement("input");
@@ -138,23 +175,20 @@
       container.appendChild(input);
     }
 
-    // Upload images to backend
+    // 🚀 Upload images to backend
     async function uploadImages() {
       const inputs = document.querySelectorAll("#inputContainer input[type='file']");
       const output = document.getElementById("output");
       output.innerHTML = "Uploading... Please wait ⏳";
 
       const formData = new FormData();
-
       inputs.forEach(input => {
         if (input.files.length > 0) {
-          for (let file of input.files) {
-            formData.append("images", file);
-          }
+          for (let file of input.files) formData.append("image", file);
         }
       });
 
-      if (!formData.has("images")) {
+      if (!formData.has("image")) {
         output.innerHTML = "<span style='color:red;'>No photos selected!</span>";
         return;
       }
@@ -166,12 +200,10 @@
         });
 
         const result = await response.json();
-
         if (result.success) {
           output.innerHTML = `
             <strong style="color:#0f0;">✅ Uploaded Successfully!</strong><br>
-            <div class='link-box'>Your Code: <b>${result.code}</b></div>
-            <p>Use this code to view or download your photos.</p>
+            <div class='link-box'>Image Link:<br><a href='${result.url}' target='_blank' style='color:#00aaff;'>${result.url}</a></div>
           `;
         } else {
           output.innerHTML = "<span style='color:red;'>Upload failed. Try again!</span>";
