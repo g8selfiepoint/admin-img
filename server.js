@@ -1,91 +1,53 @@
 import express from "express";
-import fs from "fs";
 import cors from "cors";
 import multer from "multer";
-import path from "path";
+import axios from "axios";
+import fs from "fs";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const DATA_FILE = "./data.json";
-const UPLOAD_DIR = "./uploads";
-
-// Ensure uploads folder exists
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR);
-}
-
-// Set up multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
+// Multer setup for handling image uploads (temporary storage in memory)
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Helper to read data.json safely
-function readData() {
+// Replace with your actual ImgBB API key
+const IMGBB_API_KEY = "13c92fea16f5a4435ebdd770bebd783a";
+
+app.post("/upload", upload.single("image"), async (req, res) => {
   try {
-    const data = fs.readFileSync(DATA_FILE, "utf8");
-    return JSON.parse(data);
-  } catch {
-    return {};
-  }
-}
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-// Helper to write data.json safely
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
+    // Convert file buffer to base64
+    const base64Image = req.file.buffer.toString("base64");
 
-// Generate a unique 5-digit code that has not been used before
-function generateCode() {
-  const data = readData();
-  let code;
+    // Upload to ImgBB
+    const response = await axios.post(
+      `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
+      {
+        image: base64Image,
+        name: req.file.originalname,
+      }
+    );
 
-  // Keep generating until an unused code is found
-  do {
-    code = Math.floor(10000 + Math.random() * 90000).toString();
-  } while (data[code]);
-
-  return code;
-}
-
-// 📤 Upload images and generate a unique, non-reused code
-app.post("/upload", upload.array("images", 10), (req, res) => {
-  const code = generateCode();
-  const data = readData();
-
-  data[code] = req.files.map(file => ({
-    filename: file.filename,
-    path: `/uploads/${file.filename}`,
-  }));
-
-  writeData(data);
-
-  console.log(`✅ Uploaded ${req.files.length} image(s) for code ${code}`);
-  res.json({ success: true, code });
-});
-
-// 📸 Fetch images by code
-app.get("/images/:code", (req, res) => {
-  const { code } = req.params;
-  const data = readData();
-
-  if (!data[code]) {
-    console.log(`❌ No photos found for code ${code}`);
-    return res.status(404).json({
-      success: false,
-      message: "❌ No photos found for this code.",
+    // Respond with the ImgBB image URL
+    res.json({
+      success: true,
+      url: response.data.data.url,
+      display_url: response.data.data.display_url,
     });
+  } catch (error) {
+    console.error("Upload error:", error.message);
+    res.status(500).json({ success: false, error: "Upload failed" });
   }
-
-  res.json({ success: true, images: data[code] });
 });
 
-// Serve uploads folder publicly
-app.use("/uploads", express.static(path.resolve(UPLOAD_DIR)));
+// Root route (for Render health check)
+app.get("/", (req, res) => {
+  res.send("✅ G8 SelfiePoint Backend is running perfectly!");
+});
 
 // Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
