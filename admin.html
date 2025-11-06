@@ -20,17 +20,20 @@
       padding-top: 40px;
       transition: 0.5s;
     }
+
     h1 {
       color: #00aaff;
       font-size: 36px;
       margin-bottom: 15px;
       text-shadow: 0 0 10px #007bff;
     }
+
     p {
       font-size: 18px;
       color: #bbb;
       margin-top: 5px;
     }
+
     input[type="password"], input[type="file"] {
       padding: 12px;
       border-radius: 10px;
@@ -40,11 +43,13 @@
       width: 250px;
       text-align: center;
     }
+
     input[type="password"]:focus, input[type="file"]:hover {
       border-color: #00aaff;
       box-shadow: 0 0 10px #00aaff;
       outline: none;
     }
+
     button {
       background-color: #007bff;
       color: white;
@@ -55,10 +60,12 @@
       cursor: pointer;
       transition: 0.3s;
     }
+
     button:hover {
       background-color: #00aaff;
       box-shadow: 0 0 10px #00aaff;
     }
+
     .plus-btn {
       background-color: #00aaff;
       border-radius: 50%;
@@ -69,12 +76,15 @@
       line-height: 1;
       padding: 0;
     }
+
     .plus-btn:hover {
       background-color: #007bff;
     }
+
     .hidden {
       display: none;
     }
+
     .input-container {
       display: flex;
       flex-direction: column;
@@ -82,12 +92,14 @@
       margin-top: 20px;
       gap: 15px;
     }
+
     .buttons {
       margin-top: 25px;
       display: flex;
       gap: 15px;
       justify-content: center;
     }
+
     #output {
       margin-top: 25px;
       font-size: 18px;
@@ -95,6 +107,7 @@
       max-width: 90%;
       word-wrap: break-word;
     }
+
     .link-box {
       background: #111;
       border: 1px solid #333;
@@ -104,6 +117,7 @@
       border-radius: 5px;
       word-wrap: break-word;
     }
+
     #loginBox {
       margin-top: 100px;
     }
@@ -139,6 +153,7 @@
 
   <script>
     const ADMIN_PASSCODE = "7337813468";
+    const BACKEND_URL = "https://admin-img-backend.onrender.com/upload";
 
     // ✅ Passcode validation
     function checkPasscode() {
@@ -170,7 +185,9 @@
       const formData = new FormData();
       inputs.forEach(input => {
         if (input.files.length > 0) {
-          for (let file of input.files) formData.append("image", file); // ✅ Correct key
+          for (let file of input.files) {
+            formData.append("image", file); // ✅ correct key
+          }
         }
       });
 
@@ -180,23 +197,32 @@
       }
 
       try {
-        const response = await fetch("https://admin-img-backend.onrender.com/upload", {
+        const response = await fetch(BACKEND_URL, {
           method: "POST",
           body: formData
         });
 
-        const result = await response.json();
+        const text = await response.text(); // get raw text to debug
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch {
+          throw new Error("Invalid JSON from server: " + text);
+        }
+
         if (result.success) {
           output.innerHTML = `
             <strong style="color:#0f0;">✅ Uploaded Successfully!</strong><br>
-            <div class='link-box'>Image Link:<br><a href='${result.url}' target='_blank' style='color:#00aaff;'>${result.url}</a></div>
+            <div class='link-box'>Image Link:<br>
+              <a href='${result.url}' target='_blank' style='color:#00aaff;'>${result.url}</a>
+            </div>
           `;
         } else {
-          output.innerHTML = "<span style='color:red;'>Upload failed. Try again!</span>";
+          output.innerHTML = `<span style='color:red;'>❌ Upload failed: ${result.error || "Unknown error"}</span>`;
         }
       } catch (err) {
         console.error(err);
-        output.innerHTML = "<span style='color:red;'>Server unavailable!</span>";
+        output.innerHTML = `<span style='color:red;'>⚠️ Server Error: ${err.message}</span>`;
       }
     }
   </script>
