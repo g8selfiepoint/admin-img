@@ -1,98 +1,121 @@
+// server.js
 import express from "express";
 import cors from "cors";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import multer from "multer";
+import axios from "axios";
+import FormData from "form-data";
+import mongoose from "mongoose";
 
 const app = express();
-app.use(cors());
-app.use(express.json({ limit: "50mb" }));
+app.use(cors({ origin: ["http://localhost:3000", "https://g8selfiepoint.github.io"] }));
+app.use(express.json());
 
-// Fix __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ================= MONGODB SETUP =================
+const DB_URI = "mongodb+srv://charvikkumarnv:charvikcharvik@cluster0.35j4vzm.mongodb.net/charvik_images?retryWrites=true&w=majority";
 
-// Path to data.json
-const DATA_FILE = path.join(__dirname, "data.json");
+mongoose.connect(DB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ MongoDB connected successfully!"))
+.catch(err => console.error("❌ MongoDB connection error:", err));
 
-// Load data.json
-function loadData() {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf8");
-    return JSON.parse(raw);
-  } catch (err) {
-    console.log("⚠️ data.json missing, creating new file...");
-    return { photos: [] };
-  }
-}
+// Define schema
+const uploadSchema = new mongoose.Schema({
+  code: { type: String, required: true, unique: true },
+  urls: { type: [String], required: true },
+  createdAt: { type: Date, default: Date.now }
+});
 
-// Save data.json
-function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
-}
+const Upload = mongoose.model("Upload", uploadSchema);
 
-// Generate unique 5-digit code
-function generateCode() {
+// ================= MULTER SETUP =================
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// ================= IMGBB =================
+const IMGBB_API_KEY = "13c92fea16f5a4435ebdd770bebd783a";
+
+// ================= HELPERS =================
+function generateUniqueCode() {
   return Math.floor(10000 + Math.random() * 90000).toString();
 }
 
-// ========== UPLOAD IMAGES ==========
-app.post("/upload", (req, res) => {
-  const { images } = req.body;
+// ================= UPLOAD ENDPOINT =================
+app.post("/upload", upload.array("image"), async (req, res) => {
+  if (!req.files || req.files.length === 0)
+    return res.status(400).json({ success: false, error: "No files uploaded" });
 
-  if (!images || !Array.isArray(images) || images.length === 0) {
-    return res.status(400).json({ success: false, error: "No images provided" });
+  try {
+    const code = generateUniqueCode();
+    const uploadedUrls = [];
+
+    for (const file of req.files) {
+      const base64Image = file.buffer.toString("base64");
+      const form = new FormData();
+      form.append("image", base64Image);
+      form.append("name", file.originalname);
+
+      const response = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
+        form,
+        { headers: form.getHeaders() }
+      );
+
+      uploadedUrls.push(response.data.data.url);
+    }
+
+    // Save to MongoDB
+    const newUpload = new Upload({ code, urls: uploadedUrls });
+    await newUpload.save();
+
+    res.json({ success: true, code, urls: uploadedUrls });
+
+  } catch (err) {
+    console.error("Upload error:", err.message);
+    res.status(500).json({ success: false, error: err.message || "Upload failed" });
   }
-
-  const data = loadData();
-  const code = generateCode();
-
-  data.photos.push({
-    code,
-    images,
-  });
-
-  saveData(data);
-
-  res.json({
-    success: true,
-    code,
-    images,
-  });
 });
 
-// ========== VIEW BY CODE ==========
-app.get("/image/:code", (req, res) => {
-  const code = req.params.code;
-  const data = loadData();
+// ================= GET IMAGES BY CODE =================
+app.get("/image/:code", async (req, res) => {
+  try {
+    const { code } = req.params;
+    const record = await Upload.findOne({ code });
 
-  const item = data.photos.find((p) => p.code === code);
+    if (!record) return res.json({ success: false, images: [] });
 
-  if (!item) {
-    return res.json({ success: false, images: [] });
+    res.json({ success: true, images: record.urls });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, images: [], error: err.message });
   }
-
-  res.json({ success: true, images: item.images });
 });
 
-// ========== VIEW ALL (Visitor Password: QWERT) ==========
-app.get("/images/all", (req, res) => {
-  const password = req.query.password;
+// ================= GET ALL IMAGES (PASSWORD) =================
+const VISITOR_PASSWORD = "QWERT";
 
-  if (password !== "QWERT") {
-    return res.status(403).json({ success: false, error: "Unauthorized" });
+app.get("/images/all", async (req, res) => {
+  try {
+    const password = req.query.password;
+    if (password !== VISITOR_PASSWORD)
+      return res.status(403).json({ success: false, error: "Unauthorized" });
+
+    const allUploads = await Upload.find();
+    const allImages = allUploads.flatMap(u => u.urls);
+
+    res.json({ success: true, images: allImages });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, images: [], error: err.message });
   }
-
-  const data = loadData();
-  const allImages = data.photos.flatMap((x) => x.images);
-
-  res.json({ success: true, images: allImages });
 });
 
-// Health check
-app.get("/", (req, res) => {
-  res.send("✅ Backend is running");
-});
+// ================= HEALTH CHECK =================
+app.get("/", (req, res) => res.send("✅ Charvik SelfiePoint Backend running!"));
 
+// ================= START SERVER =================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
