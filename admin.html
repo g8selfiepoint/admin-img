@@ -10,34 +10,23 @@
       color: #fff;
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+      padding: 40px 20px;
       text-align: center;
-      padding-top: 40px;
     }
-
-    h1 { color: #00aaff; font-size: 36px; margin-bottom: 15px; text-shadow: 0 0 10px #007bff; }
+    h1 { color: #00aaff; font-size: 36px; text-shadow: 0 0 10px #007bff; }
     input[type="password"], input[type="file"] {
       padding: 12px; border-radius: 10px; background: #111; border: 2px solid #007bff;
       color: #fff; width: 250px; text-align: center;
     }
-    input[type="password"]:focus, input[type="file"]:hover { border-color: #00aaff; box-shadow: 0 0 10px #00aaff; outline: none; }
-    button { background-color: #007bff; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
-    button:hover { background-color: #00aaff; box-shadow: 0 0 10px #00aaff; }
-    .plus-btn { background-color: #00aaff; border-radius: 50%; width: 45px; height: 45px; font-size: 26px; font-weight: bold; padding: 0; }
-    .plus-btn:hover { background-color: #007bff; }
-    .hidden { display: none; }
-    .input-container { display: flex; flex-direction: column; align-items: center; margin-top: 20px; gap: 15px; }
-    .buttons { margin-top: 25px; display: flex; gap: 15px; justify-content: center; }
-    #output { margin-top: 25px; font-size: 18px; color: #0f0; max-width: 90%; word-wrap: break-word; }
-    .link-box { background: #111; border: 1px solid #333; padding: 10px; margin: 10px auto; width: 80%; border-radius: 5px; word-wrap: break-word; }
-    #loginBox { margin-top: 100px; }
+    button { background: #007bff; color:#fff; border:none; padding:12px 25px;
+      font-size:16px; border-radius:8px; cursor:pointer; }
+    .hidden{ display:none; }
+    #output{ margin-top:20px; }
+    .link-box{ background:#111; padding:12px; margin-top:15px; border-radius:8px; }
   </style>
 </head>
 <body>
+
 <h1>Admin Panel - Charvik Programs</h1>
 
 <div id="loginBox">
@@ -49,87 +38,78 @@
 </div>
 
 <div id="uploadBox" class="hidden">
-  <p>Select one or more images to upload 📸</p>
-
-  <div class="input-container" id="inputContainer">
-    <input type="file" accept="image/*" multiple>
-  </div>
-
-  <div class="buttons">
-    <button class="plus-btn" onclick="addInput()">+</button>
-    <button onclick="uploadImages()">Upload</button>
-  </div>
-
+  <p>Select images to upload 📸</p>
+  <input type="file" id="fileInput" accept="image/*" multiple>
+  <br><br>
+  <button onclick="uploadImages()">Upload</button>
   <div id="output"></div>
 </div>
 
 <script>
 const ADMIN_PASSCODE = "7337813468";
 const BACKEND_URL = "https://admin-img-backend.onrender.com/upload";
+const IMGBB_API_KEY = "YOUR_IMGBB_KEY_HERE";
 
 function checkPasscode() {
-  const input = document.getElementById("passcodeInput").value.trim();
-  const msg = document.getElementById("loginMessage");
-  if (input === ADMIN_PASSCODE) {
+  if (document.getElementById("passcodeInput").value === ADMIN_PASSCODE) {
     document.getElementById("loginBox").classList.add("hidden");
     document.getElementById("uploadBox").classList.remove("hidden");
   } else {
-    msg.textContent = "❌ Invalid passcode!";
+    document.getElementById("loginMessage").textContent = "❌ Invalid passcode!";
   }
 }
 
-function addInput() {
-  const container = document.getElementById("inputContainer");
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "image/*";
-  container.appendChild(input);
+async function uploadToImgbb(file) {
+  const form = new FormData();
+  form.append("image", file);
+
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+    method: "POST",
+    body: form
+  });
+
+  const data = await res.json();
+  return data.data.url;
 }
 
 async function uploadImages() {
-  const inputs = document.querySelectorAll("#inputContainer input[type='file']");
+  const files = document.getElementById("fileInput").files;
   const output = document.getElementById("output");
-  output.innerHTML = "Uploading... ⏳";
+  output.innerHTML = "Uploading to imgbb...";
 
-  const formData = new FormData();
-  inputs.forEach(input => {
-    if (input.files.length > 0) {
-      for (let file of input.files) formData.append("image", file);
-    }
-  });
-
-  if (!formData.has("image")) {
-    output.innerHTML = "<span style='color:red;'>No photos selected!</span>";
+  if (files.length === 0) {
+    output.innerHTML = "❌ No images selected.";
     return;
   }
 
-  try {
-    const response = await fetch(BACKEND_URL, { method: "POST", body: formData });
-    const text = await response.text();
-    let result;
-    try { result = JSON.parse(text); } catch { throw new Error("Invalid JSON: " + text); }
-
-    if (result.success && result.urls.length > 0) {
-      output.innerHTML = "";
-      const codeBox = document.createElement("div");
-      codeBox.classList.add("link-box");
-
-      let html = `<strong style="color:#0f0;">✅ Uploaded Successfully!</strong><br>`;
-      html += `Visitor Code:<br><strong style='color:#ffa500;'>${result.code}</strong><br><br>`;
-      html += `Image Links:<br>`;
-      result.urls.forEach(url => {
-        html += `<a href='${url}' target='_blank' style='color:#00aaff;'>${url}</a><br>`;
-      });
-
-      codeBox.innerHTML = html;
-      output.appendChild(codeBox);
-    } else {
-      output.innerHTML = `<span style='color:red;'>❌ Upload failed: ${result.error || "Unknown error"}</span>`;
-    }
-  } catch (err) {
-    console.error(err);
-    output.innerHTML = `<span style='color:red;'>⚠️ Server Error: ${err.message}</span>`;
+  const urls = [];
+  for (let f of files) {
+    const url = await uploadToImgbb(f);
+    urls.push(url);
   }
+
+  output.innerHTML = "Saving to server...";
+
+  const res = await fetch(BACKEND_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ images: urls })
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    output.innerHTML = "❌ Server error.";
+    return;
+  }
+
+  output.innerHTML = `
+    <div class="link-box">
+      <h3>✅ Uploaded Successfully!</h3>
+      Visitor Code:<br><strong>${data.code}</strong><br><br>
+      ${urls.map(u => `<a href="${u}" target="_blank">${u}</a><br>`).join("")}
+    </div>
+  `;
 }
 </script>
 </body>
