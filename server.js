@@ -1,140 +1,98 @@
 import express from "express";
 import cors from "cors";
-import multer from "multer";
-import axios from "axios";
-import FormData from "form-data";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
+app.use(cors());
+app.use(express.json({ limit: "50mb" }));
 
-// ------------------- CONFIG -------------------
-const DATA_FILE = "./data.json";
-const IMGBB_API_KEY = "13c92fea16f5a4435ebdd770bebd783a";
-const VISITOR_PASSWORD = "QWERT"; // password to view all images
+// Fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// ------------------- CORS -------------------
-app.use(
-  cors({
-    origin: [
-      "https://g8selfiepoint.github.io", // frontend
-      "http://localhost:3000",           // local testing
-    ],
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
-  })
-);
+// Path to data.json
+const DATA_FILE = path.join(__dirname, "data.json");
 
-app.use(express.json());
-
-// ------------------- MULTER -------------------
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-// ------------------- DATA -------------------
-let imagesByCode = {};
-
-// Load existing data from JSON file
-if (fs.existsSync(DATA_FILE)) {
+// Load data.json
+function loadData() {
   try {
-    const rawData = fs.readFileSync(DATA_FILE);
-    imagesByCode = JSON.parse(rawData);
-    console.log("✅ Loaded existing data from data.json");
+    const raw = fs.readFileSync(DATA_FILE, "utf8");
+    return JSON.parse(raw);
   } catch (err) {
-    console.error("❌ Error reading data.json:", err);
+    console.log("⚠️ data.json missing, creating new file...");
+    return { photos: [] };
   }
 }
 
-// Save data to JSON file
-function saveData() {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(imagesByCode, null, 2));
-    console.log("💾 Data saved to data.json");
-  } catch (err) {
-    console.error("❌ Error writing to data.json:", err);
-  }
+// Save data.json
+function saveData(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
 }
 
-// ------------------- HELPER -------------------
 // Generate unique 5-digit code
-function generateUniqueCode() {
-  let code;
-  do {
-    code = Math.floor(10000 + Math.random() * 90000).toString();
-  } while (imagesByCode[code]);
-  return code;
+function generateCode() {
+  return Math.floor(10000 + Math.random() * 90000).toString();
 }
 
-// ------------------- ROUTES -------------------
+// ========== UPLOAD IMAGES ==========
+app.post("/upload", (req, res) => {
+  const { images } = req.body;
 
-// Health check
-app.get("/", (req, res) => {
-  res.send("✅ G8 SelfiePoint Backend is running!");
-});
-
-// Upload multiple images
-app.post("/upload", upload.array("image"), async (req, res) => {
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ success: false, error: "No files uploaded" });
+  if (!images || !Array.isArray(images) || images.length === 0) {
+    return res.status(400).json({ success: false, error: "No images provided" });
   }
 
-  try {
-    const code = generateUniqueCode();
-    const uploadedUrls = [];
+  const data = loadData();
+  const code = generateCode();
 
-    for (const file of req.files) {
-      const base64Image = file.buffer.toString("base64");
+  data.photos.push({
+    code,
+    images,
+  });
 
-      const form = new FormData();
-      form.append("image", base64Image);
-      form.append("name", file.originalname);
+  saveData(data);
 
-      const response = await axios.post(
-        `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
-        form,
-        { headers: form.getHeaders() }
-      );
-
-      uploadedUrls.push(response.data.data.url);
-    }
-
-    // Store in memory
-    imagesByCode[code] = uploadedUrls;
-
-    // Save to JSON
-    saveData();
-
-    res.json({
-      success: true,
-      code: code,
-      urls: uploadedUrls,
-    });
-  } catch (err) {
-    console.error("Upload error:", err.message);
-    res.status(500).json({ success: false, error: err.message || "Upload failed" });
-  }
+  res.json({
+    success: true,
+    code,
+    images,
+  });
 });
 
-// Get images by code (visitor)
+// ========== VIEW BY CODE ==========
 app.get("/image/:code", (req, res) => {
-  const { code } = req.params;
-  const images = imagesByCode[code];
-  if (images && images.length > 0) {
-    res.json({ success: true, images });
-  } else {
-    res.json({ success: false, images: [] });
+  const code = req.params.code;
+  const data = loadData();
+
+  const item = data.photos.find((p) => p.code === code);
+
+  if (!item) {
+    return res.json({ success: false, images: [] });
   }
+
+  res.json({ success: true, images: item.images });
 });
 
-// Get all images (visitor password mode)
+// ========== VIEW ALL (Visitor Password: QWERT) ==========
 app.get("/images/all", (req, res) => {
   const password = req.query.password;
-  if (password !== VISITOR_PASSWORD) {
+
+  if (password !== "QWERT") {
     return res.status(403).json({ success: false, error: "Unauthorized" });
   }
-  const allImages = Object.values(imagesByCode).flat();
+
+  const data = loadData();
+  const allImages = data.photos.flatMap((x) => x.images);
+
   res.json({ success: true, images: allImages });
 });
 
-// ------------------- START SERVER -------------------
+// Health check
+app.get("/", (req, res) => {
+  res.send("✅ Backend is running");
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
