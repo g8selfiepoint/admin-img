@@ -14,223 +14,123 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
       min-height: 100vh;
       text-align: center;
       padding-top: 40px;
-      transition: 0.5s;
     }
 
-    h1 {
-      color: #00aaff;
-      font-size: 36px;
-      margin-bottom: 15px;
-      text-shadow: 0 0 10px #007bff;
-    }
-
-    p {
-      font-size: 18px;
-      color: #bbb;
-      margin-top: 5px;
-    }
-
+    h1 { color: #00aaff; font-size: 36px; margin-bottom: 15px; text-shadow: 0 0 10px #007bff; }
     input[type="password"], input[type="file"] {
-      padding: 12px;
-      border-radius: 10px;
-      background: #111;
-      border: 2px solid #007bff;
-      color: #fff;
-      width: 250px;
-      text-align: center;
+      padding: 12px; border-radius: 10px; background: #111; border: 2px solid #007bff;
+      color: #fff; width: 250px; text-align: center;
     }
-
-    input[type="password"]:focus, input[type="file"]:hover {
-      border-color: #00aaff;
-      box-shadow: 0 0 10px #00aaff;
-      outline: none;
-    }
-
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background-color: #00aaff;
-      box-shadow: 0 0 10px #00aaff;
-    }
-
-    .plus-btn {
-      background-color: #00aaff;
-      border-radius: 50%;
-      width: 45px;
-      height: 45px;
-      font-size: 26px;
-      font-weight: bold;
-      line-height: 1;
-      padding: 0;
-    }
-
-    .plus-btn:hover {
-      background-color: #007bff;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .input-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 20px;
-      gap: 15px;
-    }
-
-    .buttons {
-      margin-top: 25px;
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-    }
-
-    #output {
-      margin-top: 25px;
-      font-size: 18px;
-      color: #0f0;
-      max-width: 90%;
-      word-wrap: break-word;
-    }
-
-    .link-box {
-      background: #111;
-      border: 1px solid #333;
-      padding: 10px;
-      margin: 10px auto;
-      width: 80%;
-      border-radius: 5px;
-      word-wrap: break-word;
-    }
-
-    #loginBox {
-      margin-top: 100px;
-    }
+    input[type="password"]:focus, input[type="file"]:hover { border-color: #00aaff; box-shadow: 0 0 10px #00aaff; outline: none; }
+    button { background-color: #007bff; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+    button:hover { background-color: #00aaff; box-shadow: 0 0 10px #00aaff; }
+    .plus-btn { background-color: #00aaff; border-radius: 50%; width: 45px; height: 45px; font-size: 26px; font-weight: bold; padding: 0; }
+    .plus-btn:hover { background-color: #007bff; }
+    .hidden { display: none; }
+    .input-container { display: flex; flex-direction: column; align-items: center; margin-top: 20px; gap: 15px; }
+    .buttons { margin-top: 25px; display: flex; gap: 15px; justify-content: center; }
+    #output { margin-top: 25px; font-size: 18px; color: #0f0; max-width: 90%; word-wrap: break-word; }
+    .link-box { background: #111; border: 1px solid #333; padding: 10px; margin: 10px auto; width: 80%; border-radius: 5px; word-wrap: break-word; }
+    #loginBox { margin-top: 100px; }
   </style>
 </head>
 <body>
-  <h1>Admin Panel - Charvik Programs</h1>
+<h1>Admin Panel - Charvik Programs</h1>
 
-  <!-- 🔐 PASSCODE LOGIN -->
-  <div id="loginBox">
-    <p>Enter 10-digit Admin Passcode to continue 🔒</p>
-    <input type="password" id="passcodeInput" maxlength="10" placeholder="**********" />
-    <br><br>
-    <button onclick="checkPasscode()">Unlock</button>
-    <p id="loginMessage" style="color:red;margin-top:10px;"></p>
+<div id="loginBox">
+  <p>Enter 10-digit Admin Passcode 🔒</p>
+  <input type="password" id="passcodeInput" maxlength="10" placeholder="**********" />
+  <br><br>
+  <button onclick="checkPasscode()">Unlock</button>
+  <p id="loginMessage" style="color:red;margin-top:10px;"></p>
+</div>
+
+<div id="uploadBox" class="hidden">
+  <p>Select one or more images to upload 📸</p>
+
+  <div class="input-container" id="inputContainer">
+    <input type="file" accept="image/*" multiple>
   </div>
 
-  <!-- 📸 UPLOAD SECTION -->
-  <div id="uploadBox" class="hidden">
-    <p>Select one or more images to upload 📸</p>
-
-    <div class="input-container" id="inputContainer">
-      <input type="file" accept="image/*" multiple>
-    </div>
-
-    <div class="buttons">
-      <button class="plus-btn" onclick="addInput()">+</button>
-      <button onclick="uploadImages()">Upload</button>
-    </div>
-
-    <div id="output"></div>
+  <div class="buttons">
+    <button class="plus-btn" onclick="addInput()">+</button>
+    <button onclick="uploadImages()">Upload</button>
   </div>
 
-  <script>
-    const ADMIN_PASSCODE = "7337813468";
-    const BACKEND_URL = "https://admin-img-backend.onrender.com/upload";
+  <div id="output"></div>
+</div>
 
-    // ✅ Passcode validation
-    function checkPasscode() {
-      const input = document.getElementById("passcodeInput").value.trim();
-      const msg = document.getElementById("loginMessage");
-      if (input === ADMIN_PASSCODE) {
-        document.getElementById("loginBox").classList.add("hidden");
-        document.getElementById("uploadBox").classList.remove("hidden");
-      } else {
-        msg.textContent = "❌ Invalid passcode!";
-      }
+<script>
+const ADMIN_PASSCODE = "7337813468";
+const BACKEND_URL = "https://admin-img-backend.onrender.com/upload";
+
+function checkPasscode() {
+  const input = document.getElementById("passcodeInput").value.trim();
+  const msg = document.getElementById("loginMessage");
+  if (input === ADMIN_PASSCODE) {
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("uploadBox").classList.remove("hidden");
+  } else {
+    msg.textContent = "❌ Invalid passcode!";
+  }
+}
+
+function addInput() {
+  const container = document.getElementById("inputContainer");
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  container.appendChild(input);
+}
+
+async function uploadImages() {
+  const inputs = document.querySelectorAll("#inputContainer input[type='file']");
+  const output = document.getElementById("output");
+  output.innerHTML = "Uploading... ⏳";
+
+  const formData = new FormData();
+  inputs.forEach(input => {
+    if (input.files.length > 0) {
+      for (let file of input.files) formData.append("image", file);
     }
+  });
 
-    // ➕ Add another file input
-    function addInput() {
-      const container = document.getElementById("inputContainer");
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
-      container.appendChild(input);
-    }
+  if (!formData.has("image")) {
+    output.innerHTML = "<span style='color:red;'>No photos selected!</span>";
+    return;
+  }
 
-    // 🚀 Upload images to backend
-    async function uploadImages() {
-      const inputs = document.querySelectorAll("#inputContainer input[type='file']");
-      const output = document.getElementById("output");
-      output.innerHTML = "Uploading... Please wait ⏳";
+  try {
+    const response = await fetch(BACKEND_URL, { method: "POST", body: formData });
+    const text = await response.text();
+    let result;
+    try { result = JSON.parse(text); } catch { throw new Error("Invalid JSON: " + text); }
 
-      const formData = new FormData();
-      inputs.forEach(input => {
-        if (input.files.length > 0) {
-          for (let file of input.files) {
-            formData.append("image", file);
-          }
-        }
+    if (result.success && result.urls.length > 0) {
+      output.innerHTML = "";
+      const codeBox = document.createElement("div");
+      codeBox.classList.add("link-box");
+
+      let html = `<strong style="color:#0f0;">✅ Uploaded Successfully!</strong><br>`;
+      html += `Visitor Code:<br><strong style='color:#ffa500;'>${result.code}</strong><br><br>`;
+      html += `Image Links:<br>`;
+      result.urls.forEach(url => {
+        html += `<a href='${url}' target='_blank' style='color:#00aaff;'>${url}</a><br>`;
       });
 
-      if (!formData.has("image")) {
-        output.innerHTML = "<span style='color:red;'>No photos selected!</span>";
-        return;
-      }
-
-      try {
-        const response = await fetch(BACKEND_URL, {
-          method: "POST",
-          body: formData
-        });
-
-        const text = await response.text(); // get raw text to debug
-        let result;
-        try {
-          result = JSON.parse(text);
-        } catch {
-          throw new Error("Invalid JSON from server: " + text);
-        }
-
-        if (result.success) {
-          output.innerHTML = "";
-          // Handle multiple images (if backend returns multiple codes in future)
-          const codeBox = document.createElement("div");
-          codeBox.classList.add("link-box");
-          codeBox.innerHTML = `
-            <strong style="color:#0f0;">✅ Uploaded Successfully!</strong><br>
-            Image Link:<br>
-            <a href='${result.url}' target='_blank' style='color:#00aaff;'>${result.url}</a><br>
-            Visitor Code:<br>
-            <strong style='color:#ffa500;'>${result.code}</strong>
-          `;
-          output.appendChild(codeBox);
-        } else {
-          output.innerHTML = `<span style='color:red;'>❌ Upload failed: ${result.error || "Unknown error"}</span>`;
-        }
-      } catch (err) {
-        console.error(err);
-        output.innerHTML = `<span style='color:red;'>⚠️ Server Error: ${err.message}</span>`;
-      }
+      codeBox.innerHTML = html;
+      output.appendChild(codeBox);
+    } else {
+      output.innerHTML = `<span style='color:red;'>❌ Upload failed: ${result.error || "Unknown error"}</span>`;
     }
-  </script>
+  } catch (err) {
+    console.error(err);
+    output.innerHTML = `<span style='color:red;'>⚠️ Server Error: ${err.message}</span>`;
+  }
+}
+</script>
 </body>
 </html>
