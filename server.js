@@ -92,7 +92,7 @@ app.get("/image/:code", (req, res) => {
 });
 
 // ✅ Endpoint to fetch all images (password mode)
-const VISITOR_PASSWORD = "VIEWALL";
+const VISITOR_PASSWORD = "QWERT";
 
 app.get("/images/all", (req, res) => {
   const password = req.query.password;
@@ -113,3 +113,4 @@ app.get("/", (req, res) => {
 // ✅ Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
