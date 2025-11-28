@@ -186,7 +186,7 @@
       inputs.forEach(input => {
         if (input.files.length > 0) {
           for (let file of input.files) {
-            formData.append("image", file); // ✅ correct key
+            formData.append("image", file);
           }
         }
       });
@@ -211,12 +211,18 @@
         }
 
         if (result.success) {
-          output.innerHTML = `
+          output.innerHTML = "";
+          // Handle multiple images (if backend returns multiple codes in future)
+          const codeBox = document.createElement("div");
+          codeBox.classList.add("link-box");
+          codeBox.innerHTML = `
             <strong style="color:#0f0;">✅ Uploaded Successfully!</strong><br>
-            <div class='link-box'>Image Link:<br>
-              <a href='${result.url}' target='_blank' style='color:#00aaff;'>${result.url}</a>
-            </div>
+            Image Link:<br>
+            <a href='${result.url}' target='_blank' style='color:#00aaff;'>${result.url}</a><br>
+            Visitor Code:<br>
+            <strong style='color:#ffa500;'>${result.code}</strong>
           `;
+          output.appendChild(codeBox);
         } else {
           output.innerHTML = `<span style='color:red;'>❌ Upload failed: ${result.error || "Unknown error"}</span>`;
         }
